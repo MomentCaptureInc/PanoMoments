@@ -1,0 +1,99 @@
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+      body {
+          margin: 0;
+          padding: 0;
+          background-color: #000000; 
+          overflow: hidden;
+      } 
+    </style>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/105/three.min.js"></script>
+    <script type="module">
+      
+      import { PanoMoments } from './PanoMoments.min.js'  // Requires a relatively newer browser
+
+      window.onload = function () {
+
+        var mesh, camera, scene, renderer, texture;
+        var container = document.createElement('container');
+        document.body.appendChild(container);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+        camera.target = new THREE.Vector3(0, 0, 0);
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        var renderReady = false;
+        var index = 0;
+        var identifier = {
+          moment_id: "5c95d9843c344e001f1588f6",
+          variation: 101,
+          public_api_key: '63b130be-2f20-40a2-8211-355b607f340a'
+        };
+        var panoMoment = new PanoMoments(identifier, renderCallback, readyCallback, loadedCallback);
+
+        if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
+          setInterval(update,1000/60); // Workaround for this issue - https://bugs.webkit.org/show_bug.cgi?id=211624
+        } else {
+          renderer.setAnimationLoop(update); 
+        }
+
+        function update() {
+          if (texture && panoMoment.textureReady()) { // textureReady() must be called before render()
+            texture.needsUpdate = true;
+          }
+          if (renderReady) {
+            index = (index + 1) % (panoMoment.frameCount - 1);
+            panoMoment.render(index);
+          }
+          renderer.render(scene, camera);
+        }
+
+        function renderCallback (video, momentData) {
+          if (!texture) {
+            index = panoMoment.currentIndex;
+            texture = new THREE.Texture(video);
+            texture.minFilter = THREE.LinearFilter;
+            texture.format = THREE.RGBFormat;
+            scene.add(camera);
+            mesh = new THREE.Mesh(
+              new THREE.PlaneGeometry(1, 1),
+              new THREE.MeshBasicMaterial({
+                map: texture
+              }));
+            mesh.position.set(0, 0, -2);
+            scene.add(mesh);
+            camera.add(mesh);
+            var windowAspectRatio = window.innerWidth / window.innerHeight;
+            var limit;
+            if (momentData.aspect_ratio < windowAspectRatio) {
+                limit = (Math.tan (THREE.Math.degToRad(camera.fov * 0.5)) * Math.abs(mesh.position.z) * 2.0) * momentData.aspect_ratio; 
+            } else {
+                limit = (Math.tan (THREE.Math.degToRad(camera.fov * 0.5)) * Math.abs(mesh.position.z) * 2.0) * windowAspectRatio; 
+            }
+            var calcScale = new THREE.Vector3 (limit, limit / momentData.aspect_ratio, 1);
+            mesh.scale.set(calcScale.x,calcScale.y,1);
+            console.log("PanoMoment Start Frame Decoded");
+          }
+        }
+
+        function readyCallback (video, momentData) {
+          index = panoMoment.currentIndex;
+          renderReady = true;
+          console.log("PanoMoment Ready for Rendering");
+        }
+
+        function loadedCallback (video, momentData) {
+          console.log("PanoMoment Download Complete");
+        }
+
+      }
+
+    </script>
+  </head>
+</html>

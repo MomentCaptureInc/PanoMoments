@@ -1,0 +1,6 @@
+framework module PanoMoments {
+  umbrella header "PanoMoments.h"
+
+  export *
+  module * { export * }
+}

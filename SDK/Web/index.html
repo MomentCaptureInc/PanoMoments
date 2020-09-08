@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+      body {
+          margin: 0;
+          padding: 0;
+          background-color: #000000; 
+      } 
+    </style>
+
+    <script type="module">
+      
+      import { PanoMoments } from './PanoMoments.min.js'  // Requires a relatively newer browser
+
+      window.onload = function () {
+
+        var videoInDOM = false;
+        var renderReady = false;
+        var index = 0;
+        // Note that the current provided public_api_key and moment_id are special demo values. Replace these (and private_api_key) with your own.
+        var identifier = {
+          moment_id: "5c95d9843c344e001f1588f6",
+          variation: 101,
+          public_api_key: "63b130be-2f20-40a2-8211-355b607f340a"
+        };
+        var panoMoment = new PanoMoments(identifier, renderCallback, readyCallback, loadedCallback);
+
+        window.requestAnimationFrame(animate);
+
+        function animate() {
+          if (renderReady) {
+            index = (index + 1) % (panoMoment.frameCount - 1);
+            panoMoment.render(index);
+          }
+          window.requestAnimationFrame(animate);
+        }
+
+        function renderCallback (video, momentData) {
+          if (!videoInDOM) {
+            videoInDOM = true;
+            video.style.objectFit = "fill";
+            video.style.width = "100vw";
+            video.style.height = "calc(100vw/" + momentData.aspect_ratio + ")";
+            document.body.appendChild(video);
+            console.log("PanoMoment Start Frame Decoded");
+          }
+        }
+
+        function readyCallback (video, momentData) {
+          index = panoMoment.currentIndex;
+          renderReady = true;
+          console.log("PanoMoment Ready for Rendering");
+        }
+
+        function loadedCallback (video, momentData) {
+          console.log("PanoMoment Download Complete");
+        }
+
+      }
+
+    </script>
+  </head>
+</html>
